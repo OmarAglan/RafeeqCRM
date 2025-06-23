@@ -1,17 +1,15 @@
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
-import { Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
 export default function LoginScreen() {
     const router = useRouter();
-    const colorScheme = useColorScheme() ?? 'light';
 
     const formOpacity = useSharedValue(0);
     const formTranslateY = useSharedValue(20);
@@ -29,8 +27,6 @@ export default function LoginScreen() {
     });
 
     const handleLogin = () => {
-        // We use router.replace to navigate to the dashboard and prevent
-        // the user from going back to the login screen.
         router.replace('/dashboard');
     };
 
@@ -40,70 +36,74 @@ export default function LoginScreen() {
     const inputBgColor = useThemeColor({ light: '#f0f0f0', dark: '#2a2a2a' }, 'background');
     const separatorColor = useThemeColor({ light: '#e0e0e0', dark: '#3a3a3a' }, 'background');
     const cardBgColor = useThemeColor({ light: '#ffffff', dark: '#1c1c1e' }, 'background');
+    const containerBg = useThemeColor({ light: '#f5f5f5', dark: '#000000' }, 'background');
 
     return (
-        <ThemedView style={styles.container}>
-            <Animated.View style={[
-                styles.card,
-                { backgroundColor: cardBgColor, flexDirection: isWeb ? 'row' : 'column' },
-                animatedStyle
-            ]}>
+        <ThemedView style={{ flex: 1, backgroundColor: containerBg }}>
+            {/* We use a ScrollView to ensure content is never cut off */}
+            <ScrollView contentContainerStyle={styles.scrollContainer}>
+                <Animated.View style={[
+                    styles.card,
+                    { backgroundColor: cardBgColor },
+                    animatedStyle
+                ]}>
 
-                {/* Left Panel - Social Login */}
-                <View style={styles.panel}>
-                    <ThemedText type="subtitle" style={styles.panelTitle}>Get Started</ThemedText>
-                    <ThemedText style={styles.panelDescription}>Login with your social account</ThemedText>
-                    <Pressable style={styles.socialButton}>
-                        <MaterialIcons name="g-translate" size={24} color="#DB4437" />
-                        <ThemedText style={styles.socialButtonText}>Sign in with Google</ThemedText>
-                    </Pressable>
-                </View>
+                    {/* Left Panel - Social Login */}
+                    <View style={styles.panel}>
+                        <ThemedText type="subtitle" style={styles.panelTitle}>Get Started</ThemedText>
+                        <ThemedText style={styles.panelDescription}>Login with your social account</ThemedText>
+                        <Pressable style={styles.socialButton}>
+                            <MaterialIcons name="g-translate" size={24} color="#DB4437" />
+                            <ThemedText style={styles.socialButtonText}>Sign in with Google</ThemedText>
+                        </Pressable>
+                    </View>
 
-                {/* Separator */}
-                <View style={[styles.separator, {
-                    width: isWeb ? 1 : '80%',
-                    height: isWeb ? '60%' : 1,
-                    backgroundColor: separatorColor,
-                    marginVertical: isWeb ? 0 : 20,
-                }]} />
+                    {/* Separator - Only shown on web for the side-by-side view */}
+                    {isWeb && (
+                        <View style={[styles.separator, { backgroundColor: separatorColor }]} />
+                    )}
 
-                {/* Right Panel - Email/Password Login */}
-                <View style={styles.panel}>
-                    <ThemedText type="subtitle" style={styles.panelTitle}>Login with Email</ThemedText>
-                    <TextInput
-                        style={[styles.input, { color: textColor, backgroundColor: inputBgColor }]}
-                        placeholder="Email"
-                        keyboardType="email-address"
-                        autoCapitalize="none"
-                        placeholderTextColor={placeholderColor}
-                    />
-                    <TextInput
-                        style={[styles.input, { color: textColor, backgroundColor: inputBgColor }]}
-                        placeholder="Password"
-                        secureTextEntry
-                        placeholderTextColor={placeholderColor}
-                    />
-                    <Pressable style={styles.loginButton} onPress={handleLogin}>
-                        <ThemedText style={styles.loginButtonText}>Login</ThemedText>
-                    </Pressable>
-                </View>
+                    {/* Right Panel - Email/Password Login */}
+                    <View style={styles.panel}>
+                        <ThemedText type="subtitle" style={styles.panelTitle}>Login with Email</ThemedText>
+                        <TextInput
+                            style={[styles.input, { color: textColor, backgroundColor: inputBgColor }]}
+                            placeholder="Email"
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                            placeholderTextColor={placeholderColor}
+                        />
+                        <TextInput
+                            style={[styles.input, { color: textColor, backgroundColor: inputBgColor }]}
+                            placeholder="Password"
+                            secureTextEntry
+                            placeholderTextColor={placeholderColor}
+                        />
+                        <Pressable style={styles.loginButton} onPress={handleLogin}>
+                            <ThemedText style={styles.loginButtonText}>Login</ThemedText>
+                        </Pressable>
+                    </View>
 
-            </Animated.View>
+                </Animated.View>
+            </ScrollView>
         </ThemedView>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
+    scrollContainer: {
+        flexGrow: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#f5f5f5',
+        padding: 20, // Add padding for smaller screens
     },
     card: {
-        width: '90%',
+        width: '100%',
         maxWidth: 800,
         borderRadius: 20,
+        // Using flexWrap allows the panels to stack on narrow screens
+        flexDirection: 'row',
+        flexWrap: 'wrap',
         ...Platform.select({
             web: {
                 boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
@@ -116,10 +116,13 @@ const styles = StyleSheet.create({
                 elevation: 10,
             }
         }),
-        overflow: 'hidden',
     },
     panel: {
-        flex: 1,
+        // Each panel will try to grow and take up space
+        flexGrow: 1,
+        // flexBasis sets the initial size. minWidth forces wrapping.
+        flexBasis: '45%',
+        minWidth: 300,
         justifyContent: 'center',
         alignItems: 'center',
         padding: 30,
@@ -135,7 +138,9 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     separator: {
-        alignSelf: 'center',
+        width: 1,
+        alignSelf: 'stretch',
+        marginVertical: 30, // Give it some vertical margin
     },
     input: {
         width: '100%',
